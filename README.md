@@ -1,50 +1,147 @@
-# x402
+# x402 Kaia
 
-x402 is an open standard for internet native payments. It aims to support all networks (both crypto & fiat) and forms of value (stablecoins, tokens, fiat).
+> Build and demo paywalled experiences on Kaia Kairos Testnet in minutes. This fork is in alpha.
 
-```typescript
-app.use(
-  paymentMiddleware(
-    {
-      "GET /weather": {
-        accepts: [...],                 // As many networks / schemes as you want to support
-        description: "Weather data",    // what your endpoint does
-      },
-    },
-  ),
-);
-// That's it! See examples/ for full details
+This repo packages everything you need to stand up the x402 payment flow on Kaia: a facilitator, a token-gated resource server, and a sample client that pays for access.
+
+## Prerequisites
+
+- Node.js 18+ and pnpm 10.7+ (corepack enable pnpm if you need to install it)
+- git and a POSIX shell (bash/zsh)
+- Basic familiarity with editing .env files on your machine
+
+## Quick Start (TL;DR)
+
+```bash
+git clone https://github.com/ayo-klaytn/x402-kaia
+cd x402-kaia
+chmod +x setup.sh
+./setup.sh
 ```
 
-<details>
-<summary><b>Installation</b></summary>
+Then open three terminals, all from the repo root:
 
-### Typescript
+1. Facilitator – `cd examples/typescript/facilitator && cp .env-local .env` → fill repective private key field → pnpm dev
 
-```shell
-# All available reference sdks
-npm install @x402/core @x402/evm @x402/svm @x402/axios @x402/fetch @x402/express @x402/hono @x402/next @x402/paywall @x402/extensions
+2. Resource server – `cd examples/typescript/servers/express && cp .env-local .env` → set ADDRESS to the account that receives funds → pnpm dev
 
-# Minimal Fetch client
-npm install @x402/core @x402/evm @x402/svm @x402/fetch
+3. Client – `cd examples/typescript/clients/axios && cp .env-local .env` → set PRIVATE_KEY for the paying account → pnpm dev
 
-# Minimal express Server
-npm install @x402/core @x402/evm @x402/svm @x402/express
+You should see successful payments logged in all three terminals as the client purchase is successful.
+
+## Install project dependencies
+
+The `setup.sh` script installs and builds the monorepo packages and the TypeScript examples.
+
+```bash
+chmod +x setup.sh
+./setup.sh
 ```
 
-### Python
+If you prefer to do it manually:
 
-```shell
-pip install x402
+```bash
+cd typescript && pnpm install && pnpm build
+cd ../examples/typescript && pnpm install && pnpm build
 ```
 
-### Go
+## Run the facilitator
 
-```shell
-go get github.com/coinbase/x402/go
+Terminal 1:
+
+```bash
+cd examples/typescript/facilitator
+cp .env-local .env
 ```
 
-</details>
+Update `.env` with your fee payer credentials:
+
+- `PRIVATE_KEY` – account that signs and pays fees
+- Optional `PORT` (defaults to `3000`)
+
+OR
+
+Use our hosted testnet facilitator [WIP]
+
+You will need to update the `.env` in the next step
+
+Start the facilitator:
+
+```bash
+pnpm dev
+```
+
+You should see Server listening on `http://localhost:3000`.
+
+## Run the resource server
+
+Terminal 2:
+
+```bash
+cd examples/typescript/servers/express
+cp .env-local .env
+```
+
+Configure `.env`:
+
+- `FACILITATOR_URL` – typically http://localhost:3000
+- `NETWORK` – leave as kairos-testnet
+- `ADDRESS` – Kaia account that will receive the payment (can match the facilitator account or be different)
+
+Start the server:
+
+```bash
+pnpm dev
+```
+
+## Run the client
+
+Terminal 3:
+
+```
+cd examples/typescript/clients/axios
+cp .env-local .env
+```
+
+Set `RESOURCE_SERVER_URL` (default http://localhost:4021), PRIVATE_KEY for the paying account, and leave ENDPOINT_PATH as `/weather`
+
+Run the client:
+
+```bash
+pnpm dev
+```
+
+The script will:
+
+- Request the protected endpoint
+- Receive a `402 Payment Required`
+- Pay through the facilitator
+- Retry and receive the gated response
+- Expect to see logs showing the transaction hash and the JSON payload returned from the server.
+
+## Verify everything is wired up
+
+- The facilitator terminal prints verify and settle calls as they succeed.
+- The resource server logs incoming payments and successful responses.
+- The client prints the final response body, for example:
+
+```bash
+Payment response: {
+  success: true,
+  transaction: '0xb6d777b62f75d66e2b24e45720ac81fd6b6c238540cd5d850a735b41116bc668',
+  network: 'eip155:1001',
+  payer: '0xBaf895405a01e759634b2625504ca6bf852475F4',
+  requirements: {
+    scheme: 'exact',
+    network: 'eip155:1001',
+    amount: '1000',
+    asset: '0x35AD55adDAdCd1867F8d036Ed24F0431c8Ef86A6',
+    payTo: '0x7b467A6962bE0ac80784F131049A25CDE27d62Fb',
+    maxTimeoutSeconds: 300,
+    extra: { name: 'USD Coin', version: '2' }
+  }
+}
+```
 
 ## Principles
 
