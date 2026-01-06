@@ -3,9 +3,7 @@ export default function ProtectedPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-2xl mx-auto p-8">
         <h1 className="text-4xl font-bold mb-4">Protected Content</h1>
-        <p className="text-lg">
-          Your payment was successful! Enjoy this banger song.
-        </p>
+        <p className="text-lg">Your payment was successful! Enjoy this banger song.</p>
         <iframe
           width="100%"
           height="300"
@@ -50,4 +48,3 @@ export default function ProtectedPage() {
     </div>
   );
 }
-
